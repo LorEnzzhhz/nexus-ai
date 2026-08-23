@@ -5,12 +5,24 @@ from .base import BaseProvider, Message, ToolDefinition
 
 class OpenRouterProvider(BaseProvider):
     FREE_MODELS = [
-        {"id": "meta-llama/llama-3.3-70b-instruct:free", "name": "Llama 3.3 70B (Free)"},
-        {"id": "google/gemini-2.0-flash-exp:free", "name": "Gemini 2.0 Flash (Free)"},
-        {"id": "deepseek/deepseek-chat:free", "name": "DeepSeek Chat (Free)"},
-        {"id": "mistralai/mistral-7b-instruct:free", "name": "Mistral 7B (Free)"},
-        {"id": "qwen/qwen-2.5-72b-instruct:free", "name": "Qwen 2.5 72B (Free)"},
-        {"id": "microsoft/phi-3-medium-128k-instruct:free", "name": "Phi-3 Medium (Free)"},
+        {"id": "nvidia/nemotron-3-ultra-550b-a55b:free", "name": "Nemotron 3 Ultra 550B"},
+        {"id": "nvidia/nemotron-3.5-lightning:free", "name": "Nemotron 3.5 Lightning"},
+        {"id": "nvidia/nemotron-3-super-120b-a12b:free", "name": "Nemotron 3 Super 120B"},
+        {"id": "z-ai/glm-5.2:free", "name": "GLM 5.2"},
+        {"id": "google/gemma-4-31b-it:free", "name": "Gemma 4 31B"},
+        {"id": "google/gemma-4-26b-a4b-it:free", "name": "Gemma 4 26B A4B"},
+        {"id": "thinkingmachines/inkling:free", "name": "Inkling"},
+        {"id": "thinkingmachines/inkling-small:free", "name": "Inkling Small"},
+        {"id": "cohere/north-mini-code:free", "name": "North Mini Code"},
+        {"id": "dots-studio/dots-3-note-preview:free", "name": "Dots3 Note Preview"},
+        {"id": "poolside/laguna-s-2.1:free", "name": "Laguna S 2.1"},
+        {"id": "poolside/laguna-xs-2.1:free", "name": "Laguna XS 2.1"},
+        {"id": "nvidia/nemotron-3-nano-30b-a3b:free", "name": "Nemotron Nano 30B A3B"},
+        {"id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free", "name": "Nemotron Omni Reasoning"},
+        {"id": "nvidia/nemotron-nano-12b-v2-vl:free", "name": "Nemotron Nano 12B VL"},
+        {"id": "nvidia/nemotron-nano-9b-v2:free", "name": "Nemotron Nano 9B V2"},
+        {"id": "liquid/lfm-2.5-2.6b:free", "name": "LFM 2.5 2.6B"},
+        {"id": "nvidia/nemotron-3.5-content-safety:free", "name": "Nemotron Content Safety"},
     ]
 
     async def chat(

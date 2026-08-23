@@ -38,3 +38,23 @@ class BaseProvider(ABC):
     @abstractmethod
     def list_models(self) -> list[dict]:
         ...
+
+    async def fetch_live_models(self) -> list[dict]:
+        import httpx
+        try:
+            async with httpx.AsyncClient(timeout=15) as client:
+                resp = await client.get(
+                    f"{self.base_url}/models",
+                    headers={"Authorization": f"Bearer {self.api_key}"},
+                )
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw = data.get("data", [])
+                    return [
+                        {"id": m["id"], "name": m.get("name", m["id"])}
+                        for m in raw
+                        if "id" in m
+                    ]
+        except Exception:
+            pass
+        return self.list_models()

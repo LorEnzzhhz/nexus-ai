@@ -43,10 +43,18 @@ async def list_providers():
     for name in ["openrouter", "nvidia", "opencode_zen"]:
         try:
             p = get_provider(name)
+            models = p.list_models()
+            if p.api_key:
+                try:
+                    live = await p.fetch_live_models()
+                    if live:
+                        models = live
+                except Exception:
+                    pass
             providers_info.append({
                 "id": name,
                 "name": name.replace("_", " ").title(),
-                "models": p.list_models(),
+                "models": models,
                 "configured": bool(p.api_key),
             })
         except Exception:

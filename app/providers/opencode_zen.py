@@ -5,8 +5,11 @@ from .base import BaseProvider, Message, ToolDefinition
 
 class OpenCodeZenProvider(BaseProvider):
     FREE_MODELS = [
-        {"id": "opencode/coder-v2", "name": "OpenCode Coder V2"},
-        {"id": "opencode/agent-pro", "name": "OpenCode Agent Pro"},
+        {"id": "deepseek/deepseek-chat-v3-0324", "name": "DeepSeek Chat V3"},
+        {"id": "deepseek/deepseek-r1", "name": "DeepSeek R1"},
+        {"id": "qwen/qwen3-coder", "name": "Qwen3 Coder"},
+        {"id": "anthropic/claude-sonnet-4", "name": "Claude Sonnet 4"},
+        {"id": "openai/gpt-4.1-mini", "name": "GPT-4.1 Mini"},
     ]
 
     async def chat(

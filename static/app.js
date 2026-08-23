@@ -53,16 +53,28 @@ function updateModels() {
     const provider = state.providers.find(p => p.id === providerId);
     if (!provider) return;
 
+    state.allModels = provider.models;
+    renderModelOptions(provider.models);
+
+    $('#model-count').textContent = `${provider.models.length} free`;
+    $('#model-search').value = '';
+
     modelSelect.innerHTML = '';
-    provider.models.forEach(m => {
+    state.provider = providerId;
+}
+
+function renderModelOptions(models) {
+    const modelSelect = $('#model-select');
+    modelSelect.innerHTML = '';
+    models.forEach(m => {
         const opt = document.createElement('option');
         opt.value = m.id;
         opt.textContent = m.name;
         modelSelect.appendChild(opt);
     });
-
-    state.provider = providerId;
-    state.model = modelSelect.value;
+    if (models.length > 0) {
+        state.model = models[0].id;
+    }
 }
 
 function setupEventListeners() {
@@ -71,6 +83,7 @@ function setupEventListeners() {
         state.provider = $('#provider-select').value;
         state.model = $('#model-select').value;
     });
+    $('#model-search').addEventListener('input', filterModels);
 
     $('#new-session').addEventListener('click', newSession);
     $('#refresh-files').addEventListener('click', loadFiles);
@@ -85,6 +98,16 @@ function setupEventListeners() {
         }
     });
     input.addEventListener('input', autoResize);
+}
+
+function filterModels() {
+    const query = $('#model-search').value.toLowerCase();
+    if (!state.allModels) return;
+    const filtered = state.allModels.filter(m =>
+        m.name.toLowerCase().includes(query) || m.id.toLowerCase().includes(query)
+    );
+    renderModelOptions(filtered);
+    $('#model-count').textContent = `${filtered.length} shown`;
 }
 
 function autoResize() {
