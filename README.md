@@ -36,8 +36,10 @@ docker compose up --build
 Paste this one-liner in Termux:
 
 ```bash
-pkg install git -y && git clone https://github.com/LorEnzzhhz/nexus-ai.git && cd nexus-ai && bash install.sh
+bash <(curl -L https://raw.githubusercontent.com/LorEnzzhhz/nexus-ai/main/install.sh)
 ```
+
+If Termux reports that another `apt` or `dpkg` process is running, leave that process running. The installer waits automatically when Python still needs to be installed.
 
 Then run `./start.sh` and open `http://localhost:8000` in your browser.
 
