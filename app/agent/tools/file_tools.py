@@ -1,7 +1,17 @@
 import os
 import json
+import base64
+import shutil
 from pathlib import Path
 import aiofiles
+
+
+def _resolve(path: str) -> Path:
+    """Resolve path relative to workspace, but allow absolute paths too."""
+    p = Path(path)
+    if p.is_absolute():
+        return p.resolve()
+    return p.resolve()
 
 
 async def create_file(path: str, content: str) -> str:
@@ -56,6 +66,45 @@ async def append_file(path: str, content: str) -> str:
     async with aiofiles.open(full_path, "a") as f:
         await f.write(content)
     return json.dumps({"status": "appended", "path": str(full_path)})
+
+
+async def write_binary_file(path: str, content_base64: str) -> str:
+    """Create a binary file (images, PDFs, executables) from base64-encoded content."""
+    full_path = _resolve(path)
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    data = base64.b64decode(content_base64)
+    async with aiofiles.open(full_path, "wb") as f:
+        await f.write(data)
+    return json.dumps({"status": "created", "path": str(full_path), "size": len(data), "type": "binary"})
+
+
+async def copy_file(source: str, destination: str) -> str:
+    """Copy a file from source to destination."""
+    src = _resolve(source)
+    dst = _resolve(destination)
+    if not src.exists():
+        return json.dumps({"error": f"Source not found: {source}"})
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dst)
+    return json.dumps({"status": "copied", "from": str(src), "to": str(dst)})
+
+
+async def move_file(source: str, destination: str) -> str:
+    """Move/rename a file or directory."""
+    src = _resolve(source)
+    dst = _resolve(destination)
+    if not src.exists():
+        return json.dumps({"error": f"Source not found: {source}"})
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(src), str(dst))
+    return json.dumps({"status": "moved", "from": str(src), "to": str(dst)})
+
+
+async def create_directory(path: str) -> str:
+    """Create a directory including parent directories."""
+    full_path = _resolve(path)
+    full_path.mkdir(parents=True, exist_ok=True)
+    return json.dumps({"status": "created", "path": str(full_path), "type": "directory"})
 
 
 FILE_TOOLS = [
@@ -127,6 +176,65 @@ FILE_TOOLS = [
                     "content": {"type": "string", "description": "Content to append"},
                 },
                 "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_binary_file",
+            "description": "Create a binary file (images, PDFs, executables, etc.) from base64-encoded content.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "File path"},
+                    "content_base64": {"type": "string", "description": "Base64-encoded binary content"},
+                },
+                "required": ["path", "content_base64"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "copy_file",
+            "description": "Copy a file from source to destination.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "description": "Source path"},
+                    "destination": {"type": "string", "description": "Destination path"},
+                },
+                "required": ["source", "destination"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "move_file",
+            "description": "Move or rename a file or directory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "source": {"type": "string", "description": "Source path"},
+                    "destination": {"type": "string", "description": "Destination path"},
+                },
+                "required": ["source", "destination"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "create_directory",
+            "description": "Create a directory including all parent directories.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Directory path"},
+                },
+                "required": ["path"],
             },
         },
     },

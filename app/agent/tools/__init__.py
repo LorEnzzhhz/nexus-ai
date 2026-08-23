@@ -1,5 +1,5 @@
 import json
-from .file_tools import FILE_TOOLS, create_file, read_file, list_directory, delete_file, append_file
+from .file_tools import FILE_TOOLS, create_file, read_file, list_directory, delete_file, append_file, write_binary_file, copy_file, move_file, create_directory
 from .search_tools import SEARCH_TOOLS, web_search, fetch_url
 from .shell_tools import SHELL_TOOLS, run_command
 
@@ -12,6 +12,10 @@ TOOL_REGISTRY = {
     "list_directory": list_directory,
     "delete_file": delete_file,
     "append_file": append_file,
+    "write_binary_file": write_binary_file,
+    "copy_file": copy_file,
+    "move_file": move_file,
+    "create_directory": create_directory,
     "web_search": web_search,
     "fetch_url": fetch_url,
     "run_command": run_command,

@@ -1,5 +1,12 @@
 import asyncio
 import json
+from pathlib import Path
+
+
+def _get_cwd() -> str:
+    from ...config import Config
+    Config.WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+    return str(Config.WORKSPACE_DIR.resolve())
 
 
 MAX_OUTPUT = 50_000
@@ -12,7 +19,7 @@ async def run_command(command: str, timeout: int = 60) -> str:
             command,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            cwd="/workspace",
+            cwd=_get_cwd(),
         )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
