@@ -5,11 +5,13 @@ from .base import BaseProvider, Message, ToolDefinition
 
 class OpenCodeZenProvider(BaseProvider):
     FREE_MODELS = [
-        {"id": "deepseek/deepseek-chat-v3-0324", "name": "DeepSeek Chat V3"},
-        {"id": "deepseek/deepseek-r1", "name": "DeepSeek R1"},
-        {"id": "qwen/qwen3-coder", "name": "Qwen3 Coder"},
-        {"id": "anthropic/claude-sonnet-4", "name": "Claude Sonnet 4"},
-        {"id": "openai/gpt-4.1-mini", "name": "GPT-4.1 Mini"},
+        {"id": "nemotron-3-ultra-free", "name": "Nemotron 3 Ultra (Free)"},
+        {"id": "nemotron-3.5-lightning-free", "name": "Nemotron 3.5 Lightning (Free)"},
+        {"id": "big-pickle", "name": "Big Pickle (Free Stealth)"},
+        {"id": "x-preview-f-free", "name": "Ox Alpha (Free Stealth)"},
+        {"id": "mimo-v2.5-free", "name": "MiMo-V2.5 (Free)"},
+        {"id": "hy3-free", "name": "Hy3 (Free)"},
+        {"id": "muse-spark-1.2-contributor-free", "name": "Muse Spark 1.2 Contributor (Free)"},
     ]
 
     async def chat(
@@ -40,11 +42,16 @@ class OpenCodeZenProvider(BaseProvider):
                 for t in tools
             ]
 
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
 
         async with httpx.AsyncClient(timeout=120) as client:
             resp = await client.post(
-                f"{self.base_url}/chat/completions", json=payload, headers=headers
+                f"{self.base_url}/chat/completions",
+                json=payload,
+                headers=headers,
             )
             resp.raise_for_status()
             yield resp.json()
