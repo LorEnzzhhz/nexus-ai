@@ -1,63 +1,60 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# Nexus AI - Termux installer
 set -e
 
-clear
 echo ""
-echo "  ╔══════════════════════════════════════╗"
-echo "  ║      ⚡ NEXUS AI — INSTALLER          ║"
-echo "  ╚══════════════════════════════════════╝"
+echo "  ⚡ NEXUS AI INSTALLER"
+echo "  ─────────────────────"
 echo ""
 
-echo "[1/5] Updating Termux packages..."
-pkg update -y && pkg upgrade -y 2>/dev/null | tail -1
+echo "[1/4] Installing packages..."
+apt update -y 2>/dev/null || pkg update -y 2>/dev/null || true
+apt install -y python 2>/dev/null || pkg install -y python 2>/dev/null || true
 
-echo "[2/5] Installing system dependencies..."
-pkg install -y python git libxml2 libxslt openssl 2>/dev/null | tail -1
+echo "[2/4] Installing Python packages..."
+pip install --upgrade pip -q 2>/dev/null || pip3 install --upgrade pip -q 2>/dev/null || true
 
-echo "[3/5] Installing Python packages..."
-pip install --upgrade pip setuptools wheel -q
-pip install fastapi uvicorn httpx beautifulsoup4 aiofiles python-dotenv lxml -q
+for PKG in fastapi uvicorn httpx beautifulsoup4 aiofiles python-dotenv; do
+    echo "  → $PKG"
+    pip install "$PKG" -q 2>&1 | tail -1
+done
 
-echo "[4/5] Setting up workspace..."
+echo "[3/4] Creating workspace..."
 mkdir -p workspace data
 
 if [ ! -f .env ]; then
-    cp .env.example .env
+cat > .env << 'ENVEOF'
+OPENROUTER_API_KEY=
+NVIDIA_API_KEY=
+OPENCODE_ZEN_API_KEY=
+OPENCODE_ZEN_BASE_URL=https://opencode.ai/zen/v1
+DEFAULT_PROVIDER=openrouter
+DEFAULT_MODEL=nvidia/nemotron-3-nano-30b-a3b:free
+HOST=0.0.0.0
+PORT=8000
+WORKSPACE_DIR=./workspace
+MAX_ITERATIONS=15
+MAX_TOKENS=4096
+TEMPERATURE=0.7
+ENVEOF
 fi
 
-echo "[5/5] Configuring..."
+echo "[4/4] Configuring API keys..."
 echo ""
-echo "  ── API Keys ──"
-echo ""
+read -p "  OpenRouter key (Enter to skip): " ORK
+[ -n "$ORK" ] && sed -i "s|OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${ORK}|" .env
 
-# Prompt for keys
-read -p "  OpenRouter key (or Enter to skip): " OR_KEY
-if [ -n "$OR_KEY" ]; then
-    sed -i "s|OPENROUTER_API_KEY=.*|OPENROUTER_API_KEY=${OR_KEY}|" .env
-    echo "  ✓ OpenRouter set"
-else
-    echo "  ○ Skipped"
-fi
+read -p "  NVIDIA key (Enter to skip): " NVK
+[ -n "$NVK" ] && sed -i "s|NVIDIA_API_KEY=.*|NVIDIA_API_KEY=${NVK}|" .env
 
-read -p "  NVIDIA NIM key (or Enter to skip): " NV_KEY
-if [ -n "$NV_KEY" ]; then
-    sed -i "s|NVIDIA_API_KEY=.*|NVIDIA_API_KEY=${NV_KEY}|" .env
-    echo "  ✓ NVIDIA set"
-else
-    echo "  ○ Skipped"
-fi
+read -p "  OpenCode Zen key (Enter to skip): " OCZ
+[ -n "$OCZ" ] && sed -i "s|OPENCODE_ZEN_API_KEY=.*|OPENCODE_ZEN_API_KEY=${OCZ}|" .env
 
-chmod +x start.sh
+chmod +x start.sh 2>/dev/null || true
 
 echo ""
-echo "  ╔══════════════════════════════════════╗"
-echo "  ║           ✅ READY!                   ║"
-echo "  ╠══════════════════════════════════════╣"
-echo "  ║                                      ║"
-echo "  ║  Start now? Type:                    ║"
-echo "  ║    ./start.sh                        ║"
-echo "  ║                                      ║"
-echo "  ║  Then open in browser:               ║"
-echo "  ║    http://localhost:8000             ║"
-echo "  ╚══════════════════════════════════════╝"
+echo "  ✅ Setup complete!"
+echo ""
+echo "  Type this to start:"
+echo "    ./start.sh"
 echo ""
