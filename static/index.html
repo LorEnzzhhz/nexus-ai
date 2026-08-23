@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div id="app">
+        <aside id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">⚡ Nexus AI</div>
+            </div>
+            <div class="sidebar-section">
+                <label>Provider</label>
+                <select id="provider-select"></select>
+            </div>
+            <div class="sidebar-section">
+                <label>Model</label>
+                <select id="model-select"></select>
+            </div>
+            <div class="sidebar-section">
+                <label>Sessions</label>
+                <button id="new-session" class="btn-new">+ New Chat</button>
+                <div id="session-list"></div>
+            </div>
+            <div class="sidebar-section files-section">
+                <label>Workspace Files</label>
+                <div id="file-tree"></div>
+                <button id="refresh-files" class="btn-refresh">↻ Refresh</button>
+            </div>
+            <div class="sidebar-footer">
+                <span class="status-dot" id="status-dot"></span>
+                <span id="status-text">Connected</span>
+            </div>
+        </aside>
+
+        <main id="main">
+            <header id="chat-header">
+                <h1 id="chat-title">New Conversation</h1>
+                <div id="active-tools-badge" class="hidden">
+                    <span class="pulse"></span><span id="tool-count">0</span> tools active
+                </div>
+            </header>
+
+            <div id="chat-messages">
+                <div class="welcome-message">
+                    <div class="welcome-icon">⚡</div>
+                    <h2>Nexus AI Agent</h2>
+                    <p>I can search the web, create files, run commands, and build anything you need.</p>
+                    <div class="quick-actions">
+                        <button onclick="sendQuick('Search the web for the latest AI news and summarize')">🔍 Search &amp; Summarize</button>
+                        <button onclick="sendQuick('Create a Python web scraper that extracts product prices from an e-commerce site')">📝 Create a Script</button>
+                        <button onclick="sendQuick('Build a simple REST API with FastAPI and test it')">🚀 Build an API</button>
+                        <button onclick="sendQuick('List all files in the workspace and describe what you find')">📁 Explore Workspace</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="input-area">
+                <textarea id="message-input" placeholder="Ask me anything... I can search, code, create files, and run commands." rows="1"></textarea>
+                <button id="send-btn" title="Send">➤</button>
+            </div>
+        </main>
+
+        <aside id="activity-panel">
+            <div class="panel-header">
+                <h3>Activity</h3>
+                <button id="clear-activity">Clear</button>
+            </div>
+            <div id="activity-log"></div>
+        </aside>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>
