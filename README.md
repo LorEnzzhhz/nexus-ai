@@ -33,17 +33,13 @@ docker compose up --build
 
 ### Termux (Android)
 
+Paste this one-liner in Termux:
+
 ```bash
-pkg install git
-git clone https://github.com/LorEnzzhhz/nexus-ai.git
-cd nexus-ai
-bash setup-termux.sh
-nano .env          # add your API keys
-./start-termux.sh
+pkg install git -y && git clone https://github.com/LorEnzzhhz/nexus-ai.git && cd nexus-ai && bash install.sh
 ```
 
-Open `http://localhost:8000` in your browser.
-Access from other devices on the same network via your phone's IP.
+Then run `./start.sh` and open `http://localhost:8000` in your browser.
 
 ## API Keys
 
