@@ -41,6 +41,12 @@ bash <(curl -L https://raw.githubusercontent.com/LorEnzzhhz/nexus-ai/main/instal
 
 If Termux reports that another `apt` or `dpkg` process is running, leave that process running. The installer waits automatically when Python still needs to be installed.
 
+If an older command stays on `Waiting...`, paste this bounded recovery command instead:
+
+```bash
+for i in $(seq 1 24); do pgrep -x apt >/dev/null || pgrep -x apt-get >/dev/null || pgrep -x dpkg >/dev/null || break; sleep 5; done; if pgrep -x apt >/dev/null || pgrep -x apt-get >/dev/null || pgrep -x dpkg >/dev/null; then pgrep -ax apt; pgrep -ax apt-get; pgrep -ax dpkg; echo 'Close all other Termux sessions, force-stop Termux, reopen it, and retry.'; else rm -f $PREFIX/var/lib/dpkg/lock-frontend $PREFIX/var/lib/dpkg/lock $PREFIX/var/lib/apt/lists/lock $PREFIX/var/cache/apt/archives/lock; dpkg --configure -a; pkg update -y && bash <(curl -L https://raw.githubusercontent.com/LorEnzzhhz/nexus-ai/main/install.sh); fi
+```
+
 Then run `./start.sh` and open `http://localhost:8000` in your browser.
 
 ## API Keys

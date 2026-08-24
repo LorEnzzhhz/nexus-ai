@@ -8,28 +8,39 @@ echo "  ────────────────────"
 
 wait_for_package_manager() {
     waited=0
-    while grep -q -E '^(apt|apt-get|dpkg)$' /proc/[0-9]*/comm 2>/dev/null; do
-        if (( waited % 15 == 0 )); then
-            echo "[*] Waiting for Termux package manager to finish..."
+    while pgrep -x apt >/dev/null 2>&1 || pgrep -x apt-get >/dev/null 2>&1 || pgrep -x dpkg >/dev/null 2>&1; do
+        if (( waited == 0 )); then
+            echo "[*] Waiting up to 2 minutes for Termux package manager..."
         fi
-        sleep 2
-        waited=$((waited + 1))
-        if (( waited >= 900 )); then
-            echo "[!] Another apt/dpkg operation did not finish. Close other Termux sessions and retry." >&2
+        sleep 5
+        waited=$((waited + 5))
+        if (( waited >= 120 )); then
+            echo "[!] apt/dpkg is still active after 2 minutes." >&2
+            pgrep -ax apt || true
+            pgrep -ax apt-get || true
+            pgrep -ax dpkg || true
+            echo "[!] Close every other Termux session, force-stop Termux, reopen it, then run the recovery command." >&2
             exit 1
         fi
     done
 }
 
+repair_package_manager() {
+    wait_for_package_manager
+    echo "[*] Repairing Termux package state..."
+    rm -f "$PREFIX/var/lib/dpkg/lock-frontend" "$PREFIX/var/lib/dpkg/lock" "$PREFIX/var/lib/apt/lists/lock" "$PREFIX/var/cache/apt/archives/lock"
+    dpkg --configure -a
+}
+
 if ! command -v python3 >/dev/null 2>&1; then
     echo "[*] Installing Python..."
-    wait_for_package_manager
+    repair_package_manager
     pkg install -y python
 fi
 
 if ! python3 -m pip --version >/dev/null 2>&1; then
     echo "[*] Installing pip..."
-    wait_for_package_manager
+    repair_package_manager
     pkg install -y python-pip
 fi
 
