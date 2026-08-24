@@ -116,5 +116,10 @@ echo "[*] Installing Python packages..."
 python3 -m pip install --upgrade --break-system-packages -r requirements-termux.txt
 
 chmod +x start.sh
+if [ -d "$PREFIX/bin" ]; then
+    cp nexus-launch.sh "$PREFIX/bin/nexus"
+    chmod +x "$PREFIX/bin/nexus"
+    echo "[*] Created 'nexus' launcher command."
+fi
 echo "[*] Installation complete. Starting Nexus AI..."
 exec ./start.sh

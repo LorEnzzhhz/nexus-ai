@@ -6,9 +6,12 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
   "orientation": "any",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
+  "start_url": "/?source=app",
+  "scope": "/",
   "icons": [
     {
       "src": "/icon.svg",

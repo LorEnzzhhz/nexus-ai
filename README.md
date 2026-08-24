@@ -52,6 +52,22 @@ Then run `./start.sh` and open `http://localhost:8000` in your browser.
 
 For a native-app experience, open the URL in Chrome or Firefox and choose **Add to Home screen / Install**.
 
+## Android App (APK)
+
+The repository includes a real Android app that wraps the running backend in a WebView:
+
+- Source: `android/NexusApp/` (Android Studio project)
+- Build: open `android/NexusApp` in Android Studio, connect your phone, and **Run** (or generate a signed APK).
+- On a physical device the WebView loads `http://localhost:8000`, so start the backend first with `./start.sh` (or the `nexus` Termux launcher). In the emulator use `http://10.0.2.2:8000`.
+- The backend must be running on the same device (Termux) for the app to work.
+
+Quick flow on Android:
+1. In Termux: `bash <(curl -L https://raw.githubusercontent.com/LorEnzzhhz/nexus-ai/main/install.sh)`
+2. Run `nexus` (or `bash ~/nexus-ai/nexus-launch.sh`) to start the server and open the UI.
+3. Build/install `android/NexusApp` from Android Studio for a home-screen app icon.
+
+For a browser-based install instead, open `http://localhost:8000` in Chrome and choose **Add to Home screen**.
+
 ## API Keys
 
 | Provider | Get Key | Free Models |
