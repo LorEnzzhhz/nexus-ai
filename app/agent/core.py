@@ -23,9 +23,9 @@ You have access to tools:
 - create_directory: make directories with parents
 - web_search: search the internet for current information
 - fetch_url: read content from any URL
-- run_command: execute shell commands (install packages, compile, test, etc.)
+- run_command: execute commands inside the isolated workspace/container runtime
 
-You can create ANY type of file in ANY language. Write complete, production-quality code. Use tools proactively — don't just describe what to do, actually DO it. When asked to build something, create all necessary files, install dependencies, and verify it works by running it.
+All file paths are rooted at the current workspace. You can create ANY type of file in ANY language. Write complete, production-quality code. Use tools proactively — don't just describe what to do, actually DO it. When asked to build something, create all necessary files, install dependencies, and verify it works by running it.
 
 When creating projects:
 1. Create a directory for the project
@@ -80,7 +80,15 @@ class AgentCore:
 
             async for chunk in provider.chat(
                 model=session.model,
-                messages=[Message(role=m["role"], content=m["content"]) for m in messages_for_llm],
+                messages=[
+                    Message(
+                        role=item["role"],
+                        content=item.get("content", ""),
+                        tool_calls=item.get("tool_calls"),
+                        tool_call_id=item.get("tool_call_id"),
+                    )
+                    for item in messages_for_llm
+                ],
                 tools=tool_defs,
                 temperature=Config.TEMPERATURE,
                 max_tokens=Config.MAX_TOKENS,
@@ -111,14 +119,20 @@ class AgentCore:
 
                 yield json.dumps({
                     "type": "tool_calls",
-                    "tools": [{"name": tc["function"]["name"], "args": json.loads(tc["function"]["arguments"])} for tc in tool_calls],
+                    "tools": [
+                        {
+                            "name": tc["function"]["name"],
+                            "args": self._parse_arguments(tc["function"].get("arguments", "{}")),
+                        }
+                        for tc in tool_calls
+                    ],
                 }) + "\n"
 
                 for tc in tool_calls:
                     fn_name = tc["function"]["name"]
                     try:
-                        args = json.loads(tc["function"]["arguments"])
-                    except json.JSONDecodeError:
+                        args = self._parse_arguments(tc["function"].get("arguments", "{}"))
+                    except (json.JSONDecodeError, TypeError):
                         args = {}
 
                     result = await execute_tool(fn_name, args)
@@ -148,3 +162,12 @@ class AgentCore:
         if session_id in self.sessions:
             return self.sessions[session_id].messages
         return []
+
+    @staticmethod
+    def _parse_arguments(value: object) -> dict:
+        if isinstance(value, dict):
+            return value
+        if isinstance(value, str) and value.strip():
+            parsed = json.loads(value)
+            return parsed if isinstance(parsed, dict) else {}
+        return {}

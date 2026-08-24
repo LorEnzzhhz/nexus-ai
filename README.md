@@ -1,14 +1,15 @@
 # ⚡ Nexus AI
 
-A powerful multi-provider AI agent with tool use, web search, file creation, and shell execution.
+A hybrid native/web AI agent with tool use, advanced search, file creation, and command execution.
 
 ## Features
 
 - **Multi-Provider LLM Support** — OpenRouter (free models), NVIDIA NIM, OpenCode Zen
 - **Agent Loop** — Iterative reasoning with automatic tool calling
-- **File Operations** — Create, read, append, delete files in workspace
+- **Installable App** — PWA/standalone mode on Android, desktop, iOS, and iPadOS
+- **File Operations** — Workspace-sandboxed create, read, append, delete, binary, copy, and move tools
 - **Advanced Web Search** — DuckDuckGo search + URL fetching
-- **Shell Execution** — Run any command in the container
+- **Powerful Runtime** — Shell commands, compilers, Node.js/npm, Git, ripgrep, SQLite, archives, and process-group timeouts
 - **Modern Web UI** — Dark-themed chat interface with activity panel and file explorer
 
 ## Quick Start
@@ -49,13 +50,15 @@ for i in $(seq 1 24); do pgrep -x apt >/dev/null || pgrep -x apt-get >/dev/null 
 
 Then run `./start.sh` and open `http://localhost:8000` in your browser.
 
+For a native-app experience, open the URL in Chrome or Firefox and choose **Add to Home screen / Install**.
+
 ## API Keys
 
 | Provider | Get Key | Free Models |
 |----------|---------|-------------|
 | OpenRouter | [openrouter.ai](https://openrouter.ai) | Llama 3.3, Gemini, DeepSeek, Mistral, Qwen |
 | NVIDIA NIM | [build.nvidia.com](https://build.nvidia.com) | Nemotron, Llama 3.3, Phi-3.5, Gemma |
-| OpenCode Zen | Set `OPENCODE_ZEN_BASE_URL` to your endpoint |
+| OpenCode Zen | [opencode.ai/zen](https://opencode.ai/zen) | Nemotron, Big Pickle, MiMo, Hy3, Muse Spark, Laguna |
 
 ## Architecture
 
@@ -76,7 +79,7 @@ nexus-ai/
 │   │       ├── search_tools.py # Web search + URL fetch
 │   │       └── shell_tools.py  # Shell command execution
 │   └── api/routes.py         # API endpoints
-├── static/                   # Frontend (HTML/CSS/JS)
+├── static/                   # Installable PWA frontend
 ├── Dockerfile
 ├── docker-compose.yml
 └── requirements.txt

@@ -28,3 +28,18 @@ async def serve_index():
 @app.get("/health")
 async def health():
     return {"status": "ok", "app": Config.APP_NAME, "version": Config.VERSION}
+
+
+@app.get("/manifest.webmanifest")
+async def manifest():
+    return FileResponse("static/manifest.webmanifest", media_type="application/manifest+json")
+
+
+@app.get("/service-worker.js")
+async def service_worker():
+    return FileResponse("static/service-worker.js", media_type="text/javascript")
+
+
+@app.get("/icon.svg")
+async def icon():
+    return FileResponse("static/icon.svg", media_type="image/svg+xml")

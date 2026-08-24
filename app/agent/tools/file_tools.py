@@ -1,4 +1,3 @@
-import os
 import json
 import base64
 import shutil
@@ -7,16 +6,25 @@ import aiofiles
 
 
 def _resolve(path: str) -> Path:
-    """Resolve path relative to workspace, but allow absolute paths too."""
-    p = Path(path)
-    if p.is_absolute():
-        return p.resolve()
-    return p.resolve()
+    from ...config import Config
+
+    workspace = Config.WORKSPACE_DIR.resolve()
+    workspace.mkdir(parents=True, exist_ok=True)
+    candidate = (workspace / path).resolve()
+    try:
+        candidate.relative_to(workspace)
+    except ValueError as exc:
+        raise ValueError("Path escapes the Nexus workspace") from exc
+    return candidate
 
 
 async def create_file(path: str, content: str) -> str:
     """Create or overwrite a file with the given content."""
-    full_path = Path(path).resolve()
+    from ...config import Config
+
+    full_path = _resolve(path)
+    if len(content.encode()) > Config.FILE_SIZE_LIMIT:
+        return json.dumps({"error": "File exceeds FILE_SIZE_LIMIT"})
     full_path.parent.mkdir(parents=True, exist_ok=True)
     async with aiofiles.open(full_path, "w") as f:
         await f.write(content)
@@ -25,7 +33,7 @@ async def create_file(path: str, content: str) -> str:
 
 async def read_file(path: str) -> str:
     """Read and return the contents of a file."""
-    full_path = Path(path).resolve()
+    full_path = _resolve(path)
     if not full_path.exists():
         return json.dumps({"error": f"File not found: {path}"})
     async with aiofiles.open(full_path, "r", errors="replace") as f:
@@ -37,7 +45,7 @@ async def read_file(path: str) -> str:
 
 async def list_directory(path: str = ".") -> str:
     """List files and directories at the given path."""
-    full_path = Path(path).resolve()
+    full_path = _resolve(path)
     if not full_path.is_dir():
         return json.dumps({"error": f"Not a directory: {path}"})
     entries = []
@@ -51,17 +59,28 @@ async def list_directory(path: str = ".") -> str:
 
 
 async def delete_file(path: str) -> str:
-    """Delete a file."""
-    full_path = Path(path).resolve()
+    """Delete a file or directory."""
+    from ...config import Config
+
+    full_path = _resolve(path)
+    if full_path == Config.WORKSPACE_DIR.resolve():
+        return json.dumps({"error": "Refusing to delete the workspace root"})
     if full_path.is_file():
         full_path.unlink()
         return json.dumps({"status": "deleted", "path": str(full_path)})
+    if full_path.is_dir():
+        shutil.rmtree(full_path)
+        return json.dumps({"status": "deleted_directory", "path": str(full_path)})
     return json.dumps({"error": f"Not a file: {path}"})
 
 
 async def append_file(path: str, content: str) -> str:
     """Append content to an existing file."""
-    full_path = Path(path).resolve()
+    from ...config import Config
+
+    full_path = _resolve(path)
+    if len(content.encode()) > Config.FILE_SIZE_LIMIT:
+        return json.dumps({"error": "Content exceeds FILE_SIZE_LIMIT"})
     full_path.parent.mkdir(parents=True, exist_ok=True)
     async with aiofiles.open(full_path, "a") as f:
         await f.write(content)
@@ -70,9 +89,13 @@ async def append_file(path: str, content: str) -> str:
 
 async def write_binary_file(path: str, content_base64: str) -> str:
     """Create a binary file (images, PDFs, executables) from base64-encoded content."""
+    from ...config import Config
+
     full_path = _resolve(path)
     full_path.parent.mkdir(parents=True, exist_ok=True)
     data = base64.b64decode(content_base64)
+    if len(data) > Config.FILE_SIZE_LIMIT:
+        return json.dumps({"error": "File exceeds FILE_SIZE_LIMIT"})
     async with aiofiles.open(full_path, "wb") as f:
         await f.write(data)
     return json.dumps({"status": "created", "path": str(full_path), "size": len(data), "type": "binary"})

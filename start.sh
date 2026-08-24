@@ -3,7 +3,8 @@ cd "$(dirname "$0")"
 
 if [ -f .env ]; then
     set -a
-    eval "$(grep -v '^#' .env | grep -v '^$' | sed 's/^/export /')"
+    # shellcheck disable=SC1091
+    source .env
     set +a
 fi
 

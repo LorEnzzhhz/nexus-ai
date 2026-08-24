@@ -1,6 +1,6 @@
 import httpx
 from typing import AsyncIterator
-from .base import BaseProvider, Message, ToolDefinition
+from .base import BaseProvider, Message, ToolDefinition, serialize_messages
 
 
 class NvidiaProvider(BaseProvider):
@@ -96,7 +96,7 @@ class NvidiaProvider(BaseProvider):
     ) -> AsyncIterator[dict]:
         payload: dict = {
             "model": model,
-            "messages": [{"role": m.role, "content": m.content} for m in messages],
+            "messages": serialize_messages(messages),
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": stream,

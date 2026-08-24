@@ -1,6 +1,6 @@
 import httpx
 from typing import AsyncIterator
-from .base import BaseProvider, Message, ToolDefinition
+from .base import BaseProvider, Message, ToolDefinition, serialize_messages
 
 
 class OpenRouterProvider(BaseProvider):
@@ -36,7 +36,7 @@ class OpenRouterProvider(BaseProvider):
     ) -> AsyncIterator[dict]:
         payload: dict = {
             "model": model,
-            "messages": [{"role": m.role, "content": m.content} for m in messages],
+            "messages": serialize_messages(messages),
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": stream,
@@ -81,3 +81,8 @@ class OpenRouterProvider(BaseProvider):
 
     def list_models(self) -> list[dict]:
         return self.FREE_MODELS
+
+    async def fetch_live_models(self) -> list[dict]:
+        models = await super().fetch_live_models()
+        live_free = [model for model in models if str(model.get("id", "")).endswith(":free")]
+        return live_free or self.FREE_MODELS

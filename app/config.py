@@ -4,7 +4,7 @@ from pathlib import Path
 
 class Config:
     APP_NAME = "Nexus AI"
-    VERSION = "1.0.0"
+    VERSION = "1.1.0"
 
     HOST = os.getenv("HOST", "0.0.0.0")
     PORT = int(os.getenv("PORT", "8000"))
@@ -26,7 +26,7 @@ class Config:
     OPENCODE_ZEN_API_KEY = os.getenv("OPENCODE_ZEN_API_KEY", "")
     OPENCODE_ZEN_BASE_URL = os.getenv(
         "OPENCODE_ZEN_BASE_URL",
-        "https://api.opencodezen.ai/v1",
+        "https://opencode.ai/zen/v1",
     )
 
     SEARXNG_URL = os.getenv("SEARXNG_URL", "http://localhost:8888")
@@ -36,5 +36,9 @@ class Config:
     MAX_ITERATIONS = int(os.getenv("MAX_ITERATIONS", "15"))
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "4096"))
     TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+    SHELL_ENABLED = os.getenv("SHELL_ENABLED", "true").lower() in {"1", "true", "yes"}
+    COMMAND_TIMEOUT = int(os.getenv("COMMAND_TIMEOUT", "180"))
+    MAX_COMMAND_OUTPUT = int(os.getenv("MAX_COMMAND_OUTPUT", "50000"))
+    FILE_SIZE_LIMIT = int(os.getenv("FILE_SIZE_LIMIT", str(20 * 1024 * 1024)))
 
     ALLOWED_ORIGINS = ["*"]

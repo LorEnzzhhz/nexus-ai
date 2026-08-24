@@ -13,10 +13,27 @@ const $ = (sel) => document.querySelector(sel);
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+    setupMobileNav();
     await loadProviders();
     setupEventListeners();
     loadFiles();
     checkHealth();
+}
+
+function setupMobileNav() {
+    $('#menu-button').addEventListener('click', () => {
+        document.body.classList.toggle('sidebar-open');
+    });
+    document.addEventListener('click', (event) => {
+        const sidebar = $('#sidebar');
+        if (
+            document.body.classList.contains('sidebar-open') &&
+            !sidebar.contains(event.target) &&
+            !event.target.closest('#menu-button')
+        ) {
+            document.body.classList.remove('sidebar-open');
+        }
+    });
 }
 
 async function loadProviders() {

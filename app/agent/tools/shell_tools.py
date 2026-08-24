@@ -1,45 +1,7 @@
 import asyncio
 import json
-from pathlib import Path
-
-
-def _get_cwd() -> str:
-    from ...config import Config
-    Config.WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
-    return str(Config.WORKSPACE_DIR.resolve())
-
-
-MAX_OUTPUT = 50_000
-
-
-async def run_command(command: str, timeout: int = 60) -> str:
-    """Execute a shell command and return stdout/stderr."""
-    try:
-        proc = await asyncio.create_subprocess_shell(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=_get_cwd(),
-        )
-        try:
-            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
-        except asyncio.TimeoutError:
-            proc.kill()
-            return json.dumps({"error": "Command timed out", "command": command})
-
-        output = {
-            "command": command,
-            "exit_code": proc.returncode,
-            "stdout": stdout.decode("utf-8", errors="replace"),
-            "stderr": stderr.decode("utf-8", errors="replace"),
-        }
-        if len(output["stdout"]) > MAX_OUTPUT:
-            output["stdout"] = output["stdout"][:MAX_OUTPUT] + "\n... (truncated)"
-        if len(output["stderr"]) > MAX_OUTPUT // 2:
-            output["stderr"] = output["stderr"][:MAX_OUTPUT // 2] + "\n... (truncated)"
-        return json.dumps(output)
-    except Exception as e:
-        return json.dumps({"error": f"Execution failed: {e}", "command": command})
+import os
+import signal
 
 
 SHELL_TOOLS = [
@@ -47,15 +9,79 @@ SHELL_TOOLS = [
         "type": "function",
         "function": {
             "name": "run_command",
-            "description": "Execute a shell command in the container environment. Can install packages, run scripts, compile code, etc.",
+            "description": "Execute a shell command in the isolated workspace/container runtime. Can create projects, install dependencies, run scripts, compile code, test applications, archive files, and inspect results.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "command": {"type": "string", "description": "Shell command to execute"},
-                    "timeout": {"type": "integer", "description": "Timeout in seconds (default 60)"},
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Timeout in seconds; capped by COMMAND_TIMEOUT",
+                    },
                 },
                 "required": ["command"],
             },
         },
-    },
+    }
 ]
+
+
+async def run_command(command: str, timeout: int | None = None) -> str:
+    from ...config import Config
+
+    if not Config.SHELL_ENABLED:
+        return json.dumps({"error": "Shell execution is disabled by SHELL_ENABLED=false"})
+
+    max_output = Config.MAX_COMMAND_OUTPUT
+    effective_timeout = min(max(1, timeout or Config.COMMAND_TIMEOUT), Config.COMMAND_TIMEOUT)
+    workspace = Config.WORKSPACE_DIR.resolve()
+    tmp_dir = workspace / ".tmp"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    environment = os.environ.copy()
+    environment.update(
+        {
+            "HOME": str(workspace),
+            "TMPDIR": str(tmp_dir),
+            "NEXUS_WORKSPACE": str(workspace),
+            "TERM": environment.get("TERM", "dumb"),
+        }
+    )
+
+    try:
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=workspace,
+            env=environment,
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(process.communicate(), effective_timeout)
+        except asyncio.TimeoutError:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            await process.communicate()
+            return json.dumps(
+                {
+                    "error": "Command timed out",
+                    "command": command,
+                    "timeout_seconds": effective_timeout,
+                }
+            )
+
+        output = {
+            "command": command,
+            "exit_code": process.returncode,
+            "stdout": stdout.decode("utf-8", errors="replace"),
+            "stderr": stderr.decode("utf-8", errors="replace"),
+        }
+        if len(output["stdout"]) > max_output:
+            output["stdout"] = output["stdout"][:max_output] + "\n... (truncated)"
+        if len(output["stderr"]) > max_output // 2:
+            output["stderr"] = output["stderr"][: max_output // 2] + "\n... (truncated)"
+        return json.dumps(output)
+    except Exception as exc:
+        return json.dumps({"error": f"Execution failed: {exc}", "command": command})

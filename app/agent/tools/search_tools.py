@@ -4,32 +4,54 @@ from bs4 import BeautifulSoup
 
 
 async def web_search(query: str, max_results: int = 5) -> str:
-    """Search the web using DuckDuckGo and return results."""
+    """Search the web with SearXNG when available and DuckDuckGo as a fallback."""
     results = []
+    from ..config import Config  # noqa: PLC0415
+
     try:
-        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+        async with httpx.AsyncClient(timeout=12) as client:
             resp = await client.get(
-                "https://html.duckduckgo.com/html/",
-                params={"q": query},
-                headers={"User-Agent": "Mozilla/5.0 (compatible; NexusAI/1.0)"},
+                f"{Config.SEARXNG_URL.rstrip('/')}/search",
+                params={"q": query, "format": "json"},
+                headers={"User-Agent": "NexusAI/1.1"},
             )
-            soup = BeautifulSoup(resp.text, "html.parser")
-            for result in soup.select(".result")[:max_results]:
-                title_el = result.select_one(".result__title a")
-                snippet_el = result.select_one(".result__snippet")
-                if title_el:
-                    url = title_el.get("href", "")
-                    if "uddg=" in url:
-                        from urllib.parse import urlparse, parse_qs
-                        parsed = parse_qs(urlparse(url).query)
-                        url = parsed.get("uddg", [url])[0]
-                    results.append({
-                        "title": title_el.get_text(strip=True),
-                        "url": url,
-                        "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
-                    })
-    except Exception as e:
-        return json.dumps({"error": f"Search failed: {e}"})
+            if resp.status_code == 200:
+                results = [
+                    {
+                        "title": item.get("title", ""),
+                        "url": item.get("url", ""),
+                        "snippet": item.get("content", ""),
+                    }
+                    for item in resp.json().get("results", [])[:max_results]
+                ]
+    except Exception:
+        results = []
+
+    if not results:
+        try:
+            async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "Mozilla/5.0 (compatible; NexusAI/1.0)"},
+                )
+                soup = BeautifulSoup(resp.text, "html.parser")
+                for result in soup.select(".result")[:max_results]:
+                    title_el = result.select_one(".result__title a")
+                    snippet_el = result.select_one(".result__snippet")
+                    if title_el:
+                        url = title_el.get("href", "")
+                        if "uddg=" in url:
+                            from urllib.parse import urlparse, parse_qs
+                            parsed = parse_qs(urlparse(url).query)
+                            url = parsed.get("uddg", [url])[0]
+                        results.append({
+                            "title": title_el.get_text(strip=True),
+                            "url": url,
+                            "snippet": snippet_el.get_text(strip=True) if snippet_el else "",
+                        })
+        except Exception as e:
+            return json.dumps({"error": f"Search failed: {e}"})
 
     if not results:
         return json.dumps({"message": "No results found", "query": query})
@@ -60,7 +82,7 @@ SEARCH_TOOLS = [
         "type": "function",
         "function": {
             "name": "web_search",
-            "description": "Search the web for information. Returns titles, URLs, and snippets.",
+            "description": "Advanced web search using SearXNG with DuckDuckGo fallback. Returns ranked titles, URLs, and snippets.",
             "parameters": {
                 "type": "object",
                 "properties": {

@@ -3,10 +3,15 @@ version: "3.8"
 services:
   nexus-ai:
     build: .
+    init: true
     ports:
       - "${PORT:-8000}:8000"
     env_file:
       - .env
+    environment:
+      WORKSPACE_DIR: /workspace
+      SHELL_ENABLED: "${SHELL_ENABLED:-true}"
+      COMMAND_TIMEOUT: "${COMMAND_TIMEOUT:-180}"
     volumes:
       - ./workspace:/workspace
       - ./data:/app/data

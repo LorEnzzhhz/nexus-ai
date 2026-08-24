@@ -1,6 +1,6 @@
 import httpx
 from typing import AsyncIterator
-from .base import BaseProvider, Message, ToolDefinition
+from .base import BaseProvider, Message, ToolDefinition, serialize_messages
 
 
 class OpenCodeZenProvider(BaseProvider):
@@ -12,6 +12,7 @@ class OpenCodeZenProvider(BaseProvider):
         {"id": "mimo-v2.5-free", "name": "MiMo-V2.5 (Free)"},
         {"id": "hy3-free", "name": "Hy3 (Free)"},
         {"id": "muse-spark-1.2-contributor-free", "name": "Muse Spark 1.2 Contributor (Free)"},
+        {"id": "laguna-s-2.1-free", "name": "Laguna S 2.1 (Free)"},
     ]
 
     async def chat(
@@ -25,7 +26,7 @@ class OpenCodeZenProvider(BaseProvider):
     ) -> AsyncIterator[dict]:
         payload: dict = {
             "model": model,
-            "messages": [{"role": m.role, "content": m.content} for m in messages],
+            "messages": serialize_messages(messages),
             "temperature": temperature,
             "max_tokens": max_tokens,
         }
@@ -58,3 +59,11 @@ class OpenCodeZenProvider(BaseProvider):
 
     def list_models(self) -> list[dict]:
         return self.FREE_MODELS
+
+    async def fetch_live_models(self) -> list[dict]:
+        models = await super().fetch_live_models()
+        live_free = [model for model in models if str(model.get("id", "")).endswith("-free")]
+        known_free = next((model for model in models if model.get("id") == "big-pickle"), None)
+        if known_free:
+            live_free.append({"id": known_free["id"], "name": "Big Pickle (Free Stealth)"})
+        return live_free or self.FREE_MODELS
