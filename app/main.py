@@ -1,13 +1,42 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from starlette.applications import Starlette
+from starlette.middleware.cors import CORSMiddleware
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
+from starlette.responses import FileResponse
 
 from .api.routes import router
 from .config import Config
 
 
-app = FastAPI(title=Config.APP_NAME, version=Config.VERSION)
+async def app_health(request):
+    from starlette.responses import JSONResponse
+    return JSONResponse({"status": "ok", "app": Config.APP_NAME, "version": Config.VERSION})
+
+
+async def manifest(request):
+    return FileResponse("static/manifest.webmanifest", media_type="application/manifest+json")
+
+
+async def service_worker(request):
+    return FileResponse("static/service-worker.js", media_type="text/javascript")
+
+
+async def icon(request):
+    return FileResponse("static/icon.svg", media_type="image/svg+xml")
+
+
+app = Starlette(
+    debug=Config.DEBUG,
+    routes=[
+        Mount("/api", app=router),
+        Route("/", FileResponse("static/index.html")),
+        Route("/health", app_health),
+        Route("/manifest.webmanifest", manifest),
+        Route("/service-worker.js", service_worker),
+        Route("/icon.svg", icon),
+        Mount("/static", app=StaticFiles(directory="static"), name="static"),
+    ],
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,31 +44,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-app.include_router(router, prefix="/api")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
-@app.get("/")
-async def serve_index():
-    return FileResponse("static/index.html")
-
-
-@app.get("/health")
-async def health():
-    return {"status": "ok", "app": Config.APP_NAME, "version": Config.VERSION}
-
-
-@app.get("/manifest.webmanifest")
-async def manifest():
-    return FileResponse("static/manifest.webmanifest", media_type="application/manifest+json")
-
-
-@app.get("/service-worker.js")
-async def service_worker():
-    return FileResponse("static/service-worker.js", media_type="text/javascript")
-
-
-@app.get("/icon.svg")
-async def icon():
-    return FileResponse("static/icon.svg", media_type="image/svg+xml")

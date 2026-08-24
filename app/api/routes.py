@@ -1,17 +1,17 @@
 import json
 import uuid
-from fastapi import APIRouter, Request
-from fastapi.responses import StreamingResponse
 
-from ..agent.core import AgentCore
+from starlette.requests import Request
+from starlette.responses import JSONResponse, StreamingResponse
+from starlette.routing import Route, Router
+
+from ..agent.core import AgentCore, AgentSession
 from ..providers import get_provider
 from ..config import Config
 
-router = APIRouter()
 agent = AgentCore()
 
 
-@router.post("/chat")
 async def chat(request: Request):
     body = await request.json()
     session_id = body.get("session_id", str(uuid.uuid4()))
@@ -20,7 +20,6 @@ async def chat(request: Request):
     model = body.get("model", Config.DEFAULT_MODEL)
 
     if session_id not in agent.sessions:
-        from ..agent.core import AgentSession
         agent.sessions[session_id] = AgentSession(provider_name=provider_name, model=model)
     else:
         agent.sessions[session_id].provider_name = provider_name
@@ -37,16 +36,15 @@ async def chat(request: Request):
     )
 
 
-@router.get("/providers")
-async def list_providers():
+async def list_providers(request: Request):
     providers_info = []
     for name in ["openrouter", "nvidia", "opencode_zen"]:
         try:
-            p = get_provider(name)
-            models = p.list_models()
-            if p.api_key:
+            provider = get_provider(name)
+            models = provider.list_models()
+            if provider.api_key:
                 try:
-                    live = await p.fetch_live_models()
+                    live = await provider.fetch_live_models()
                     if live:
                         models = live
                 except Exception:
@@ -55,25 +53,35 @@ async def list_providers():
                 "id": name,
                 "name": name.replace("_", " ").title(),
                 "models": models,
-                "configured": bool(p.api_key),
+                "configured": bool(provider.api_key),
             })
         except Exception:
             pass
-    return {"providers": providers_info}
+    return JSONResponse({"providers": providers_info})
 
 
-@router.get("/sessions/{session_id}")
-async def get_session(session_id: str):
-    history = agent.get_session_history(session_id)
-    return {"session_id": session_id, "messages": history}
+async def get_session(request: Request):
+    session_id = request.path_params["session_id"]
+    return JSONResponse({
+        "session_id": session_id,
+        "messages": agent.get_session_history(session_id),
+    })
 
 
-@router.get("/files")
-async def list_files(path: str = "."):
+async def list_files(request: Request):
+    path = request.query_params.get("path", ".")
     result = await agent_sessions_list_dir(path)
-    return json.loads(result)
+    return JSONResponse(json.loads(result))
 
 
 async def agent_sessions_list_dir(path: str) -> str:
     from ..agent.tools import execute_tool
     return await execute_tool("list_directory", {"path": path})
+
+
+router = Router(routes=[
+    Route("/chat", chat, methods=["POST"]),
+    Route("/providers", list_providers),
+    Route("/sessions/{session_id}", get_session),
+    Route("/files", list_files),
+])

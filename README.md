@@ -65,7 +65,7 @@ For a native-app experience, open the URL in Chrome or Firefox and choose **Add 
 ```
 nexus-ai/
 ├── app/
-│   ├── main.py              # FastAPI entry point
+│   ├── main.py              # Starlette/uvicorn entry point
 │   ├── config.py             # Configuration
 │   ├── providers/            # LLM providers
 │   │   ├── base.py           # Provider interface
