@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', init);
 async function init() {
     setupMobileNav();
     await loadProviders();
+    await loadConfig();
     setupEventListeners();
     loadFiles();
     checkHealth();
@@ -107,6 +108,8 @@ function setupEventListeners() {
     $('#clear-activity').addEventListener('click', clearActivity);
     $('#send-btn').addEventListener('click', sendMessage);
 
+    setupSettings();
+
     const input = $('#message-input');
     input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -115,6 +118,20 @@ function setupEventListeners() {
         }
     });
     input.addEventListener('input', autoResize);
+}
+
+function setupSettings() {
+    ['open-settings', 'header-settings', 'welcome-settings', 'banner-settings'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('click', openSettings);
+    });
+    document.querySelectorAll('[data-close]').forEach((el) => {
+        el.addEventListener('click', closeSettings);
+    });
+    document.getElementById('settings-save').addEventListener('click', saveSettings);
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeSettings();
+    });
 }
 
 function filterModels() {
@@ -147,6 +164,87 @@ async function checkHealth() {
     } catch {
         $('#status-dot').classList.add('offline');
         $('#status-text').textContent = 'Offline';
+    }
+}
+
+async function loadConfig() {
+    try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        state.config = data;
+        renderProviderStatus(data);
+        showKeyBannerIfNeeded(data);
+        document.getElementById('cfg-openrouter').value = data.keys.OPENROUTER_API_KEY || '';
+        document.getElementById('cfg-nvidia').value = data.keys.NVIDIA_API_KEY || '';
+        document.getElementById('cfg-opencode').value = data.keys.OPENCODE_ZEN_API_KEY || '';
+        document.getElementById('cfg-opencode-url').value = data.keys.OPENCODE_ZEN_BASE_URL || '';
+        document.getElementById('cfg-provider').value = data.defaults.provider || 'openrouter';
+        document.getElementById('cfg-model').value = data.defaults.model || '';
+        document.getElementById('cfg-shell').value = data.defaults.shell_enabled ? 'true' : 'false';
+        document.getElementById('cfg-timeout').value = data.defaults.command_timeout || 180;
+    } catch (e) {
+        console.error('Failed to load config', e);
+    }
+}
+
+function renderProviderStatus(data) {
+    const names = { openrouter: 'OpenRouter', nvidia: 'NVIDIA', opencode_zen: 'OpenCode Zen' };
+    const el = document.getElementById('provider-status');
+    if (!el) return;
+    el.innerHTML = Object.entries(data.providers)
+        .map(([id, p]) => `<div class="ps"><span class="dot ${p.configured ? 'ok' : ''}"></span>${names[id] || id} ${p.configured ? 'connected' : 'no key'}</div>`)
+        .join('');
+}
+
+function showKeyBannerIfNeeded(data) {
+    const any = Object.values(data.providers).some((p) => p.configured);
+    const banner = document.getElementById('key-banner');
+    if (any) {
+        banner.classList.add('hidden');
+        document.body.classList.remove('has-banner');
+    } else {
+        banner.classList.remove('hidden');
+        document.body.classList.add('has-banner');
+    }
+}
+
+function openSettings() {
+    document.getElementById('settings-modal').classList.remove('hidden');
+}
+
+function closeSettings() {
+    document.getElementById('settings-modal').classList.add('hidden');
+}
+
+async function saveSettings() {
+    const payload = {
+        OPENROUTER_API_KEY: document.getElementById('cfg-openrouter').value.trim(),
+        NVIDIA_API_KEY: document.getElementById('cfg-nvidia').value.trim(),
+        OPENCODE_ZEN_API_KEY: document.getElementById('cfg-opencode').value.trim(),
+        OPENCODE_ZEN_BASE_URL: document.getElementById('cfg-opencode-url').value.trim(),
+        DEFAULT_PROVIDER: document.getElementById('cfg-provider').value,
+        DEFAULT_MODEL: document.getElementById('cfg-model').value.trim(),
+        SHELL_ENABLED: document.getElementById('cfg-shell').value,
+        COMMAND_TIMEOUT: Number(document.getElementById('cfg-timeout').value || 180),
+    };
+    const status = document.getElementById('settings-status');
+    status.className = 'settings-status';
+    status.textContent = 'Saving...';
+    try {
+        const res = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error('save failed');
+        status.className = 'settings-status ok';
+        status.textContent = 'Saved. Reloading providers...';
+        await loadProviders();
+        await loadConfig();
+        setTimeout(closeSettings, 800);
+    } catch (e) {
+        status.className = 'settings-status err';
+        status.textContent = 'Could not save settings.';
     }
 }
 

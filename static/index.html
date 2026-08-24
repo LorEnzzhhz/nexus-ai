@@ -15,13 +15,19 @@
 </head>
 <body>
     <div id="app">
+        <div id="key-banner" class="key-banner hidden">
+            ⚠ Add your API keys to start chatting.
+            <button id="banner-settings" class="btn-inline">Open Settings</button>
+        </div>
         <aside id="sidebar">
             <div class="sidebar-header">
                 <div class="logo">⚡ Nexus AI</div>
+                <button id="open-settings" class="btn-settings" title="Settings">⚙</button>
             </div>
             <div class="sidebar-section">
                 <label>Provider</label>
                 <select id="provider-select"></select>
+                <div id="provider-status" class="provider-status"></div>
             </div>
             <div class="sidebar-section">
                 <label>Model <span id="model-count" class="model-count"></span></label>
@@ -50,6 +56,7 @@
                     <button id="menu-button" class="menu-button" aria-label="Toggle controls">☰</button>
                     <h1 id="chat-title">New Conversation</h1>
                 </div>
+                <button id="header-settings" class="btn-settings" title="Settings">⚙ Settings</button>
                 <div id="active-tools-badge" class="hidden">
                     <span class="pulse"></span><span id="tool-count">0</span> tools active
                 </div>
@@ -64,9 +71,10 @@
                         <button onclick="sendQuick('Search the web for the latest AI news and summarize')">🔍 Search &amp; Summarize</button>
                         <button onclick="sendQuick('Create a Python web scraper that extracts product prices from an e-commerce site')">📝 Create a Script</button>
                         <button onclick="sendQuick('Build a simple REST API with FastAPI and test it')">🚀 Build an API</button>
-                        <button onclick="sendQuick('List all files in the workspace and describe what you find')">📁 Explore Workspace</button>
-                    </div>
+                    <button onclick="sendQuick('List all files in the workspace and describe what you find')">📁 Explore Workspace</button>
                 </div>
+                <button id="welcome-settings" class="btn-new welcome-settings">⚙ Add API Keys</button>
+            </div>
             </div>
 
             <div id="input-area">
@@ -83,6 +91,55 @@
             <div id="activity-log"></div>
         </aside>
     </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-backdrop" data-close="1"></div>
+        <div class="modal-card">
+            <div class="modal-head">
+                <h2>⚙ Settings</h2>
+                <button class="modal-close" data-close="1" aria-label="Close">✕</button>
+            </div>
+            <p class="modal-sub">Keys are stored locally in <code>.env</code> and only sent to the provider you choose.</p>
+            <div class="form-grid">
+                <label>OpenRouter API Key</label>
+                <input type="password" id="cfg-openrouter" placeholder="sk-or-..." autocomplete="off">
+
+                <label>NVIDIA API Key</label>
+                <input type="password" id="cfg-nvidia" placeholder="nvapi-..." autocomplete="off">
+
+                <label>OpenCode Zen API Key</label>
+                <input type="password" id="cfg-opencode" placeholder="Zen key..." autocomplete="off">
+
+                <label>OpenCode Zen Base URL</label>
+                <input type="text" id="cfg-opencode-url" placeholder="https://opencode.ai/zen/v1">
+
+                <label>Default Provider</label>
+                <select id="cfg-provider">
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="nvidia">NVIDIA</option>
+                    <option value="opencode_zen">OpenCode Zen</option>
+                </select>
+
+                <label>Default Model</label>
+                <input type="text" id="cfg-model" placeholder="model id">
+
+                <label>Shell Execution</label>
+                <select id="cfg-shell">
+                    <option value="true">Enabled</option>
+                    <option value="false">Disabled</option>
+                </select>
+
+                <label>Command Timeout (s)</label>
+                <input type="number" id="cfg-timeout" min="5" max="600" value="180">
+            </div>
+            <div id="settings-status" class="settings-status"></div>
+            <div class="modal-actions">
+                <button id="settings-cancel" class="btn-secondary" data-close="1">Cancel</button>
+                <button id="settings-save" class="btn-primary">Save Keys</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.register('/service-worker.js'));

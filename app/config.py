@@ -42,3 +42,49 @@ class Config:
     FILE_SIZE_LIMIT = int(os.getenv("FILE_SIZE_LIMIT", str(20 * 1024 * 1024)))
 
     ALLOWED_ORIGINS = ["*"]
+
+    RUNTIME_KEYS = [
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_BASE_URL",
+        "NVIDIA_API_KEY",
+        "NVIDIA_BASE_URL",
+        "OPENCODE_ZEN_API_KEY",
+        "OPENCODE_ZEN_BASE_URL",
+        "SEARXNG_URL",
+        "DEFAULT_PROVIDER",
+        "DEFAULT_MODEL",
+        "MAX_ITERATIONS",
+        "MAX_TOKENS",
+        "TEMPERATURE",
+        "SHELL_ENABLED",
+        "COMMAND_TIMEOUT",
+        "MAX_COMMAND_OUTPUT",
+        "FILE_SIZE_LIMIT",
+    ]
+
+    @classmethod
+    def update_runtime(cls, values: dict) -> None:
+        for key, raw in values.items():
+            if key not in cls.RUNTIME_KEYS or raw is None:
+                continue
+            value = raw
+            if key in {"MAX_ITERATIONS", "MAX_TOKENS", "COMMAND_TIMEOUT", "MAX_COMMAND_OUTPUT", "FILE_SIZE_LIMIT"}:
+                try:
+                    value = int(value)
+                except (TypeError, ValueError):
+                    continue
+            elif key in {"TEMPERATURE"}:
+                try:
+                    value = float(value)
+                except (TypeError, ValueError):
+                    continue
+                cls.TEMPERATURE = value
+                os.environ[key] = str(value)
+                continue
+            elif key == "SHELL_ENABLED":
+                value = str(value).lower() in {"1", "true", "yes"}
+                cls.SHELL_ENABLED = value
+                os.environ[key] = str(value)
+                continue
+            setattr(cls, key, value)
+            os.environ[key] = str(value)
